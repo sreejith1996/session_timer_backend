@@ -3,6 +3,7 @@
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"],
   "compilerOptions": {
+    "typeRoots": ["./src/types"],
     // File Layout
     "rootDir": "./src",
     "outDir": "./dist",
