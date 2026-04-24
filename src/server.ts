@@ -3,28 +3,34 @@ import type { Application } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
+import { authenticate } from './middleware/auth';
 
 dotenv.config();
 
 const app: Application = express();
 const PORT = Number(process.env.PORT) || 8000;
 
-app.use(cors({ origin: 'https://laughing-spork-q76gvvj4pgp24xx4-5173.app.github.dev' }));
-
+app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(authenticate);
 
 function createUserClient(accessToken : string) {
-  console.log(accessToken);
-  return createClient(
-    process.env.SUPABASE_URL || '',
-    process.env.SUABASE_SERVICE_ROLE_KEY || '',
-    {
-      global: {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if(supabaseUrl && supabaseRoleKey){
+    return createClient(
+      supabaseUrl,
+      supabaseRoleKey,
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          }
         }
       }
-    }
-  )
+    )
+  } else {
+    throw Error('Could not find supabase url or key');
+  }
 }
 
 app.get('/api/protected', async (req, res) => {
@@ -44,7 +50,10 @@ app.get('/api/protected', async (req, res) => {
       .select('*')
       .eq('user_id', userId)
 
-    if(error) throw error;
+    if(error){
+      console.log(error);
+      throw error;
+    }
 
     res.json({
       message: `Hello ${email}`,
@@ -56,7 +65,6 @@ app.get('/api/protected', async (req, res) => {
     console.error(error)
     res.status(500).json({ error: message})
   }
-  res.send('Hello world')
 });
 
 app.listen(PORT, () => {
