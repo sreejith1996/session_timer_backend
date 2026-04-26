@@ -9,4 +9,7 @@ declare global{
             supabase?: SupabaseClient<any, "public", "public", any, any>
         }
     }
+    interface Error {
+        status?: number
+    }
 }
