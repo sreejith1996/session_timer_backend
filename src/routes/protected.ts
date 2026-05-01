@@ -6,13 +6,9 @@ const router = express.Router();
 
 router.get('/api/protected', async (req: Request, res: Response) => {
     try {
-      if (!req.user || !req.token) {
-        console.log(req.user, req.token);
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-  
-      const userId = req.user.id;
-      const email = req.user.email;
+
+      const userId = req.user!.id;
+      const email = req.user!.email;
   
       const supabase = req.supabase!;
   
