@@ -5,6 +5,7 @@ import cors from 'cors';
 import { attachSupabaseClient, authenticate } from './middleware/auth';
 import protectedRouter from './routes/protected';
 import tasksRouter from './routes/tasks';
+import sessionRouter from './routes/sessions';
 import logger from './middleware/logger';
 import errorHandler from './middleware/error';
 import { Request, Response } from 'express';
@@ -26,6 +27,7 @@ app.get('/api/v1/health', (req: Request, res: Response) => {
 app.use(authenticate, attachSupabaseClient, logger);
 app.use(protectedRouter);
 app.use(tasksRouter);
+app.use(sessionRouter);
 
 // Consume all errors 
 app.use((req: Request, res: Response, next: NextFunction) => {
