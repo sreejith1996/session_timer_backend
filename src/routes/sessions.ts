@@ -1,46 +1,15 @@
 import { Request, Response, Router } from 'express';
 import express from 'express';
+import { getSessions, pauseSession, resumeSession, startSession } from '../controllers/sessionsController';
 
 const router = express.Router();
 
-router.get('/api/v1/sessions', async (req: Request, res: Response) => {
-    try {
-        const userId = req.user!.id;
-        const supabase = req.supabase!;
+router.get('/api/v1/sessions', getSessions)
 
-        const { data, error } = await supabase
-            .from('sessions')
-            .select('*')
-            .eq('user_id', userId);
+router.post('/api/v1/session/start', startSession);
 
-        if (error) {
-            throw error;
-        }
+router.post('/api/v1/session/pause', pauseSession);
 
-        res.status(200).json({
-            message: 'Retrieved sessions successfully',
-            userId,
-            info: data
-        }); 
-    } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        res.status(500).json({
-            error: message
-        });
-    }
-    
-})
-
-router.post('api/v1/session/start', async () => {
-    
-});
-
-router.post('api/v1/session/pause', async () => {
-
-});
-
-router.post('api/v1/session/resume', async () => {
-
-})
+router.post('/api/v1/session/resume', resumeSession);
 
 export default router;

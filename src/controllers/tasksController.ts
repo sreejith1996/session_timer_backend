@@ -15,7 +15,7 @@ const createTask = async (req: Request, res: Response) => {
                 user_id: userId,
                 task_name: req.body.taskName,
                 task_description: req.body.taskDescription
-            })
+            }).select().single();
         if (error) {
             throw error;
         }
