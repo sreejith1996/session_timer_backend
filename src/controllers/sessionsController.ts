@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { sendControllerError } from "../utils/controllerError";
 
 const getSessions = async (req: Request, res: Response) => {
     try {
@@ -20,10 +21,7 @@ const getSessions = async (req: Request, res: Response) => {
             info: data
         });
     } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        res.status(500).json({
-            error: message
-        });
+        sendControllerError(res, error);
     }
 
 }
@@ -53,15 +51,12 @@ const startSession = async (req: Request, res: Response) => {
             info: data
         })
     } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.log(error);
-        res.status(500).json({
-            error: message
-        });
+        sendControllerError(res, error);
     }
 }
 
 const pauseSession = async (req: Request, res: Response) => {
+    //TODO: update the status in sessions table to paused, statuses = active, paused, completed, cancelled.
     const userId = req.user!.id;
     const supabase = req.supabase;
 
@@ -86,11 +81,7 @@ const pauseSession = async (req: Request, res: Response) => {
         });
 
     } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.log(error);
-        res.status(500).json({
-            error: message
-        });
+        sendControllerError(res, error);
     }
 }
 
@@ -106,7 +97,7 @@ const resumeSession = async (req: Request, res: Response) => {
                 session_id: req.body.sessionId,
                 resumed_at: new Date().toISOString()
             })
-            .in('session_id', req.body.sessionId)
+            .eq('session_id', req.body.sessionId)
             .is('resumed_at', null).select();
 
         if (error) {
@@ -119,12 +110,18 @@ const resumeSession = async (req: Request, res: Response) => {
             info: data
         });
     } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.log(error);
-        res.status(500).json({
-            error: message
-        });
+        sendControllerError(res, error);
     }
 }
+
+//TODO: Get sessions for a specific task id
+
+
+
+//TODO: If user starts the session quickly or hits the endpoint pauses, if resume is null, give an error to the user.
+
+//TODO: If the number of pauses > 5, then do not allow the user to pause, just cancel the session
+
+//TODO: 
 
 export { getSessions, startSession, pauseSession, resumeSession }

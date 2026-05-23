@@ -1,6 +1,7 @@
 //Get tasks controller
 
 import { Request, Response } from "express";
+import { sendControllerError } from "../utils/controllerError";
 
 const createTask = async (req: Request, res: Response) => {
     
@@ -25,10 +26,8 @@ const createTask = async (req: Request, res: Response) => {
             userId,
             info: data
         })
-    } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.log(error);
-        res.status(500).json({error: message});
+    } catch (error) {
+        sendControllerError(res, error);
     }
     // Create my task
     // with task_name, task_description, 
@@ -57,9 +56,7 @@ const getAllTasks = async (req: Request, res: Response) => {
             info: data
         });
     } catch (error) {
-        const message = error instanceof Error ? error.message: String(error);
-        console.log(error);
-        res.status(500).json({ error: message });
+        sendControllerError(res, error);
     }
 }
 
