@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { sendControllerError } from "../utils/controllerError";
+import { SESSION_STATUS } from "../utils/constants";
 
 const getSessions = async (req: Request, res: Response) => {
     try {
@@ -37,7 +38,7 @@ const startSession = async (req: Request, res: Response) => {
             .insert({
                 user_id: userId,
                 task_id: req.body.taskId,
-                status: req.body.status,
+                status: SESSION_STATUS.ACTIVE,
                 planned_duration_in_seconds: req.body.plannedDurationInSec
             }).select().single();
 
@@ -61,7 +62,15 @@ const pauseSession = async (req: Request, res: Response) => {
     const supabase = req.supabase;
 
     try {
-        const { data, error } = await supabase!
+        const setSessionToPausedPromise = await supabase!
+            .from('sessions')
+            .update({
+                user_id: userId,
+                id: req.body.sessionId,
+                status: SESSION_STATUS.PAUSED,
+            }).eq('session_id', req.body.sessionId)
+
+        const setResumedAtToNullInSessionPausePromise =  await supabase!
             .from('session_pauses')
             .insert({
                 user_id: userId,
@@ -69,9 +78,23 @@ const pauseSession = async (req: Request, res: Response) => {
                 paused_at: new Date().toISOString(),
                 resumed_at: null
             }).select().single();
+        
+        const [setSessionToPausedResponse, setResumedAtToNullInSessionPauseResponse] = await Promise.all([
+            setSessionToPausedPromise, setResumedAtToNullInSessionPausePromise
+        ])
+        
+        const { data: sessionSetToPausedData, error: sessionSetToPauseError } = setSessionToPausedResponse
+        const { data: resumedSetToNullData, error: resumedSetToNullError } = setResumedAtToNullInSessionPauseResponse
 
-        if (error) {
-            throw error;
+        if (resumedSetToNullError?.code === '23505') {
+            return res.status(409).json({ message: 'Session is already paused'});
+        }
+
+        if (sessionSetToPauseError) throw sessionSetToPauseError
+        if (resumedSetToNullError) throw resumedSetToNullError
+
+        const data = {
+            sessionSetToPausedData, resumedSetToNullData
         }
 
         res.status(201).json({
@@ -79,7 +102,6 @@ const pauseSession = async (req: Request, res: Response) => {
             userId,
             info: data
         });
-
     } catch (error) {
         sendControllerError(res, error);
     }
@@ -88,6 +110,8 @@ const pauseSession = async (req: Request, res: Response) => {
 const resumeSession = async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const supabase = req.supabase;
+
+    //TODO: set the status to resume in the database as well
 
     try {
         const { data, error } = await supabase!
@@ -105,7 +129,7 @@ const resumeSession = async (req: Request, res: Response) => {
         }
 
         res.status(201).json({
-            message: 'Paused session successfully',
+            message: 'Resumed session successfully',
             userId,
             info: data
         });
@@ -114,14 +138,8 @@ const resumeSession = async (req: Request, res: Response) => {
     }
 }
 
-//TODO: Get sessions for a specific task id
-
-
-
-//TODO: If user starts the session quickly or hits the endpoint pauses, if resume is null, give an error to the user.
+//TODO: Get sessions for a specific task id, this will only be there for reports page
 
 //TODO: If the number of pauses > 5, then do not allow the user to pause, just cancel the session
-
-//TODO: 
 
 export { getSessions, startSession, pauseSession, resumeSession }
