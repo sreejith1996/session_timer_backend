@@ -62,40 +62,16 @@ const pauseSession = async (req: Request, res: Response) => {
     const supabase = req.supabase;
 
     try {
-        const setSessionToPausedPromise = await supabase!
-            .from('sessions')
-            .update({
-                user_id: userId,
-                id: req.body.sessionId,
-                status: SESSION_STATUS.PAUSED,
-            }).eq('session_id', req.body.sessionId)
-
-        const setResumedAtToNullInSessionPausePromise =  await supabase!
-            .from('session_pauses')
-            .insert({
-                user_id: userId,
-                session_id: req.body.sessionId,
-                paused_at: new Date().toISOString(),
-                resumed_at: null
-            }).select().single();
         
-        const [setSessionToPausedResponse, setResumedAtToNullInSessionPauseResponse] = await Promise.all([
-            setSessionToPausedPromise, setResumedAtToNullInSessionPausePromise
-        ])
-        
-        const { data: sessionSetToPausedData, error: sessionSetToPauseError } = setSessionToPausedResponse
-        const { data: resumedSetToNullData, error: resumedSetToNullError } = setResumedAtToNullInSessionPauseResponse
+        const { data, error } =  await supabase!.rpc('handle_pause_session', {
+            p_user_id: userId,
+            p_session_id: req.body.sessionId,
+            p_status: SESSION_STATUS.PAUSED,
+            p_paused_at: new Date().toISOString()
+        });
 
-        if (resumedSetToNullError?.code === '23505') {
-            return res.status(409).json({ message: 'Session is already paused'});
-        }
+        if(error) throw error;
 
-        if (sessionSetToPauseError) throw sessionSetToPauseError
-        if (resumedSetToNullError) throw resumedSetToNullError
-
-        const data = {
-            sessionSetToPausedData, resumedSetToNullData
-        }
 
         res.status(201).json({
             message: 'Paused session successfully',
@@ -115,14 +91,12 @@ const resumeSession = async (req: Request, res: Response) => {
 
     try {
         const { data, error } = await supabase!
-            .from('session_pauses')
-            .update({
-                user_id: userId,
-                session_id: req.body.sessionId,
-                resumed_at: new Date().toISOString()
+            .rpc('handle_resume_session', {
+                p_user_id: userId,
+                p_session_id: req.body.sessionId,
+                p_status: SESSION_STATUS.PAUSED,
+                p_resumed_at: new Date().toISOString()
             })
-            .eq('session_id', req.body.sessionId)
-            .is('resumed_at', null).select();
 
         if (error) {
             throw error;
@@ -138,8 +112,29 @@ const resumeSession = async (req: Request, res: Response) => {
     }
 }
 
+const getCurrent = async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const supabase = req.supabase;
+
+    try {
+        const { data, error } =  await supabase!.rpc('get_session_elapsed_time', {
+            p_session_id: req.body.sessionId
+        });
+        if (error) throw error;
+
+        console.log(data);
+        res.status(200).json({
+            message: 'Current status received successfully!',
+            userId,
+            info: data
+        });
+    } catch (error) {
+        sendControllerError(res, error);
+    }
+}
+
 //TODO: Get sessions for a specific task id, this will only be there for reports page
 
 //TODO: If the number of pauses > 5, then do not allow the user to pause, just cancel the session
 
-export { getSessions, startSession, pauseSession, resumeSession }
+export { getSessions, startSession, pauseSession, resumeSession, getCurrent }
