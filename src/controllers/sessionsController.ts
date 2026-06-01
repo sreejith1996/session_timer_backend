@@ -94,7 +94,7 @@ const resumeSession = async (req: Request, res: Response) => {
             .rpc('handle_resume_session', {
                 p_user_id: userId,
                 p_session_id: req.body.sessionId,
-                p_status: SESSION_STATUS.PAUSED,
+                p_status: SESSION_STATUS.ACTIVE,
                 p_resumed_at: new Date().toISOString()
             })
 
@@ -121,7 +121,20 @@ const getCurrent = async (req: Request, res: Response) => {
             p_session_id: req.body.sessionId
         });
         if (error) throw error;
-
+        if (data[0]?.active_elapsed_seconds >= data[0]?.planned_duration_in_seconds) {
+            const { data: newData, error: newError } = await supabase!
+                .from('sessions')
+                .update({
+                    user_id: userId,
+                    task_id: req.body.taskId,
+                    status: SESSION_STATUS.COMPLETED,
+                }).eq('id', req.body.sessionId).select().single();
+            
+            if(newError){
+                throw newError;
+            }
+            
+        }
         console.log(data);
         res.status(200).json({
             message: 'Current status received successfully!',
