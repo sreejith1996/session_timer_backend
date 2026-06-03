@@ -32,7 +32,6 @@ const startSession = async (req: Request, res: Response) => {
     const supabase = req.supabase;
 
     try {
-        //TODO: validation
         const { data, error } = await supabase!
             .from('sessions')
             .insert({
@@ -57,7 +56,6 @@ const startSession = async (req: Request, res: Response) => {
 }
 
 const pauseSession = async (req: Request, res: Response) => {
-    //TODO: update the status in sessions table to paused, statuses = active, paused, completed, cancelled.
     const userId = req.user!.id;
     const supabase = req.supabase;
 
@@ -86,8 +84,6 @@ const pauseSession = async (req: Request, res: Response) => {
 const resumeSession = async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const supabase = req.supabase;
-
-    //TODO: set the status to resume in the database as well
 
     try {
         const { data, error } = await supabase!
@@ -133,9 +129,14 @@ const getCurrent = async (req: Request, res: Response) => {
             if(newError){
                 throw newError;
             }
-            
+
+            res.status(200).json({
+                message: 'Current status received successfully!',
+                userId,
+                info: newData
+            });
+            return;
         }
-        console.log(data);
         res.status(200).json({
             message: 'Current status received successfully!',
             userId,
@@ -145,9 +146,5 @@ const getCurrent = async (req: Request, res: Response) => {
         sendControllerError(res, error);
     }
 }
-
-//TODO: Get sessions for a specific task id, this will only be there for reports page
-
-//TODO: If the number of pauses > 5, then do not allow the user to pause, just cancel the session
 
 export { getSessions, startSession, pauseSession, resumeSession, getCurrent }

@@ -29,10 +29,6 @@ const createTask = async (req: Request, res: Response) => {
     } catch (error) {
         sendControllerError(res, error);
     }
-    // Create my task
-    // with task_name, task_description, 
-    // one user can create max of 50 task,
-    // gives back a success message 
 }
 
 const getAllTasks = async (req: Request, res: Response) => {
