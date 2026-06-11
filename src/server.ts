@@ -6,6 +6,7 @@ import { attachSupabaseClient, authenticate } from './middleware/auth';
 import protectedRouter from './routes/protected';
 import tasksRouter from './routes/tasks';
 import sessionRouter from './routes/sessions';
+import reportsRouter from './routes/reports';
 import logger from './middleware/logger';
 import errorHandler from './middleware/error';
 import { Request, Response } from 'express';
@@ -28,8 +29,9 @@ app.use(authenticate, attachSupabaseClient, logger);
 app.use(protectedRouter);
 app.use(tasksRouter);
 app.use(sessionRouter);
+app.use(reportsRouter);
 
-// Consume all errors 
+// Consume all errors
 app.use((req: Request, res: Response, next: NextFunction) => {
   const error = new Error('Not Found');
   error.status = 400;
