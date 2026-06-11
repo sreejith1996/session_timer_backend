@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import express from 'express';
-import { getCurrent, getSessions, pauseSession, resumeSession, startSession } from '../controllers/sessionsController';
+import { deleteSession, getCurrent, getSessions, pauseSession, resumeSession, startSession } from '../controllers/sessionsController';
 
 const router = express.Router();
 
@@ -13,5 +13,7 @@ router.post('/api/v1/session/pause', pauseSession);
 router.post('/api/v1/session/resume', resumeSession);
 
 router.post('/api/v1/session/current', getCurrent);
+
+router.delete('/api/v1/session/:sessionId', deleteSession);
 
 export default router;

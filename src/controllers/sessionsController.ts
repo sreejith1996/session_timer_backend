@@ -147,4 +147,39 @@ const getCurrent = async (req: Request, res: Response) => {
     }
 }
 
-export { getSessions, startSession, pauseSession, resumeSession, getCurrent }
+const deleteSession = async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const supabase = req.supabase!;
+    const { sessionId } = req.params;
+
+    try {
+        const { data, error } = await supabase
+            .from('sessions')
+            .delete()
+            .eq('id', sessionId)
+            .eq('user_id', userId)
+            .select()
+            .maybeSingle();
+
+        if (error) {
+            throw error;
+        }
+
+        if (!data) {
+            res.status(404).json({
+                error: 'Session not found'
+            });
+            return;
+        }
+
+        res.status(200).json({
+            message: 'Deleted session successfully',
+            userId,
+            info: data
+        });
+    } catch (error) {
+        sendControllerError(res, error);
+    }
+}
+
+export { getSessions, startSession, pauseSession, resumeSession, getCurrent, deleteSession }
