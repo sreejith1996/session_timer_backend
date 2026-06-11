@@ -147,6 +147,56 @@ const getCurrent = async (req: Request, res: Response) => {
     }
 }
 
+const getOngoingSession = async (req: Request, res: Response) => {
+    const userId = req.user!.id;
+    const supabase = req.supabase!;
+
+    try {
+        const { data, error } = await supabase
+            .from('session_pauses')
+            .select(`
+                id,
+                session_id,
+                paused_at,
+                resumed_at,
+                sessions!inner (
+                    id,
+                    user_id,
+                    task_id,
+                    status,
+                    planned_duration_in_seconds
+                )
+            `)
+            .is('resumed_at', null)
+            .eq('sessions.user_id', userId)
+            .order('paused_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (error) {
+            throw error;
+        }
+
+        res.status(200).json({
+            message: data ? 'Ongoing session found' : 'No ongoing session found',
+            userId,
+            info: data
+                ? {
+                    pause: {
+                        id: data.id,
+                        sessionId: data.session_id,
+                        pausedAt: data.paused_at,
+                        resumedAt: data.resumed_at
+                    },
+                    session: data.sessions
+                }
+                : null
+        });
+    } catch (error) {
+        sendControllerError(res, error);
+    }
+}
+
 const deleteSession = async (req: Request, res: Response) => {
     const userId = req.user!.id;
     const supabase = req.supabase!;
@@ -182,4 +232,4 @@ const deleteSession = async (req: Request, res: Response) => {
     }
 }
 
-export { getSessions, startSession, pauseSession, resumeSession, getCurrent, deleteSession }
+export { getSessions, startSession, pauseSession, resumeSession, getCurrent, getOngoingSession, deleteSession }
